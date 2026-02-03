@@ -1,0 +1,43 @@
+[Unit]
+Description=Flask Web Service (Gunicorn)
+After=local-fs.target
+Requires=local-fs.target
+ 
+[Service]
+Type=simple
+User=zzq
+WorkingDirectory=/home/zzq/ocr_systemd
+
+# Run Gunicorn directly
+ExecStart=/home/zzq/ocr_systemd/venv/bin/gunicorn \
+    --workers 2 \
+    --threads 2 \
+    --timeout 30 \
+    --bind 127.0.0.1:8000 \
+    app:app
+ 
+Restart=always
+RestartSec=5
+ 
+# Optional safety
+KillSignal=SIGTERM
+TimeoutStopSec=30
+ 
+# Environment
+Environment=PYTHONUNBUFFERED=1
+
+# Logging
+StandardOutput=journal+console
+StandardError=journal+console
+SyslogIdentifier=flask_service
+
+# Security hardening
+PrivateTmp=fasle
+ReadWritePaths=/home/zzq/ocr_systemd /home/zzq/ocr_systemd/venv
+
+# Resource limits
+LimitNOFILE=65536
+MemoryMax=2G
+
+[Install]
+WantedBy=multi-user.target

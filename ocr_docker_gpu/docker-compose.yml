@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  ocr_service:
+    build:
+      context: ./ocr
+    container_name: ocr_service
+    restart: always
+
+    gpus:
+      - driver: nvidia
+        device_ids: [ "0" ]
+        capabilities: [ gpu ]
+
+    volumes:
+      # Shared database and temp image folder
+      - ./data:/data
+      # External image folder (host path can be adjusted as needed)
+      - /home/zzq/image_folder:/image_folder:ro
+
+    environment:
+      IMG_DIR: /image_folder
+      DB_FILE: /data/ocr_data.db
+      TEMP_IMAGE_PATH: /data/temp.png
+      CUDA_VISIBLE_DEVICES: "0"
+      LOG_LEVEL: info
+
+  flask_service:
+    build:
+      context: ./flask
+    container_name: flask_service
+    restart: always
+
+    ports:
+      - "5000:5000"
+
+    volumes:
+      # Shared database and temp image folder (read-only from web service)
+      - ./data:/data:ro
+
+    environment:
+      DB_FILE: /data/ocr_data.db
+      TEMP_IMAGE_PATH: /data/temp.png
+      LOG_LEVEL: info

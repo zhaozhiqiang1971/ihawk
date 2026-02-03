@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Codes Table</title>
+  <style>
+    #table-container {
+      height: 200px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th {
+      position: sticky;
+      top: 0;
+      background-color: #f2f2f2;
+      z-index: 10;
+      border: 1px solid black;
+      padding: 8px;
+      text-align: left;
+    }
+    td {
+      border: 1px solid black;
+      padding: 8px;
+      text-align: left;
+    }
+    #image-frame {
+      margin-top: 20px;
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+    }
+    #image-frame img {
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>  
+  <div id="table-container">
+    <table id="codesTable">
+      <thead>
+        <tr>
+          <th>Idx</th>
+          <th>Date/Time</th>
+          <th>Car Plate</th>
+          <th>Container Code</th>
+          <th>Check Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Data rows here -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- New image frame -->
+  <div id="image-frame">
+    <img id="live-image" src="/temp.png" alt="Latest capture" style="max-width: 50%; height: auto;">
+  </div>
+
+  <script>
+    let lastImageVersion = null;
+
+    async function loadData() {
+      const response = await fetch('/data');
+      const result = await response.json();
+
+      const tbody = document.querySelector('#codesTable tbody');
+      tbody.innerHTML = '';
+
+      result.rows.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${row.idx}</td>
+          <td>${row.timestamp}</td>
+          <td>${row.car_code}</td>
+          <td>${row.container_code}</td>
+          <td>${row.match_status}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      const container = document.getElementById('table-container');
+      container.scrollTop = container.scrollHeight;
+
+      // CONDITIONAL IMAGE REFRESH
+      if (lastImageVersion !== result.image_version) {
+        lastImageVersion = result.image_version;
+        updateImage();
+      }
+    }
+
+    function updateImage() {
+      const img = document.getElementById('live-image');
+      img.src = '/temp.png?t=' + new Date().getTime(); // cache-bust only when needed
+    }
+
+    loadData();
+    setInterval(loadData, 2000);
+  </script>
+
+</body>
+</html>

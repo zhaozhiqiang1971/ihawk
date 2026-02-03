@@ -1,0 +1,5 @@
+# Production requirements for flask Service
+# Python 3.10 compatible
+Flask==3.0.0
+gunicorn==21.2.0
+Werkzeug==3.0.1

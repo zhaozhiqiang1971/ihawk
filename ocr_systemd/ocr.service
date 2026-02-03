@@ -1,0 +1,37 @@
+[Unit]
+Description=OCR Service
+After=network.target
+Requires=local-fs.target
+
+[Service]
+Type=simple
+User=zzq
+WorkingDirectory=/home/zzq/ocr_systemd
+
+ExecStart=/home/zzq/ocr_systemd/venv/bin/python /home/zzq/ocr_systemd/ocr.py
+ 
+Restart=always
+RestartSec=5
+ 
+# Optional safety
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+# Logging
+StandardOutput=journal+console
+StandardError=journal+console
+SyslogIdentifier=ocr_service
+
+# Environment
+Environment=PYTHONUNBUFFERED=1
+
+# Safety hardening (safe for Python + GPU)
+PrivateTmp=false
+ReadWritePaths=/home/zzq/ocr_systemd /home/zzq/ocr_systemd/venv
+
+# Resource limits (optional but recommended)
+LimitNOFILE=65536
+MemoryMax=4G
+
+[Install]
+WantedBy=multi-user.target

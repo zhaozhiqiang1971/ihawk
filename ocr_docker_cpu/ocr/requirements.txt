@@ -1,0 +1,11 @@
+# Production requirements for OCR Service
+# Python 3.10 compatible
+
+# Core OCR dependencies
+paddlepaddle-gpu==2.6.2
+paddleocr==2.7.0.3
+
+# Image processing
+Pillow==10.1.0
+opencv-python==4.6.0.66
+numpy==1.26.4
