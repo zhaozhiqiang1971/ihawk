@@ -32,7 +32,7 @@ StandardError=journal+console
 SyslogIdentifier=flask_service
 
 # Security hardening
-PrivateTmp=fasle
+PrivateTmp=false
 ReadWritePaths=/home/zzq/ocr_systemd /home/zzq/ocr_systemd/venv
 
 # Resource limits
