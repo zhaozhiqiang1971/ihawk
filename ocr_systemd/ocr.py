@@ -19,31 +19,27 @@ import signal
 from paddleocr import PaddleOCR
 
 # --------------------- Paths ---------------------
-DATA_DIR = Path("/home/zzq/ocr_systemd/data")
-IMG_DIR = Path("/home/zzq/ocr_systemd/image_folder")
-DB_FILE = Path("/home/zzq/ocr_systemd/data/ocr_data.db")
-TEMP_IMAGE_PATH = Path("/home/zzq/ocr_systemd/data/temp.png")
+# DATA_DIR = Path("/home/zzq/ocr_systemd/data")
+# IMG_DIR = Path("/home/zzq/image_folder")
+# DB_FILE = Path("/home/zzq/ocr_systemd/data/ocr_data.db")
+# TEMP_IMAGE_PATH = Path("/home/zzq/ocr_systemd/data/temp.png")
 
-# BASE_DIR = Path(__file__).resolve().parent
-# IMG_DIR = BASE_DIR / "image_folder"
-# DATA_DIR = BASE_DIR / "data"
-# DB_FILE = DATA_DIR / "ocr_data.db"
-# TEMP_IMAGE_PATH = DATA_DIR / "temp.png"
+#project path
+PROJ_DIR = Path(__file__).resolve().parent
+DB_FILE = PROJ_DIR / "data/ocr_data.db"
+TEMP_IMAGE_PATH = PROJ_DIR / "data/temp.png"
 
+#change the path manually
+IMG_DIR = Path("/home/zzq/image_folder")
 # Unix domain socket path for IPC
-SOCKET_PATH = "/home/zzq/ocr_tmp/ipc_image.sock"
+SOCKET_PATH = "/home/zzq/ocr_tmp/ipc_image.sock"  #receive from IPC
+SOCKET_PATH2 = "/home/zzq/ocr_tmp/ocr_result.sock" #send to IPC
 
 # --------------------- Config ---------------------
 IMAGE_EXTS = ('.png', '.jpg', '.jpeg')
 CAR_PREFIX = ('XD', 'XE', 'XF')
 CAR_NUM_PATTERN = re.compile(r'^(\d{4}[A-Z]$|\d{3}[A-Z]$|\d{3}$)')
 CONTAINER_PATTERN = re.compile(r'^([A-Z]{4}|\d{6})')
-
-# # IPC config
-# IPC_LISTEN_HOST = "0.0.0.0"
-# IPC_LISTEN_PORT = 6000
-# IPC_REPLY_IP = os.getenv("IPC_REPLY_IP", "127.0.0.1")
-# IPC_REPLY_PORT = int(os.getenv("IPC_REPLY_PORT", "5000"))
 
 # PaddleOCR
 ocr = None
@@ -81,13 +77,6 @@ def record_to_db(timestamp, car_code, container_code, match_status):
 
 # --------------------- IPC Handling ---------------------
 def start_ipc_server():
-#     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-#     server.bind((IPC_LISTEN_HOST, IPC_LISTEN_PORT))
-#     server.listen(5)
-#     logging.info("IPC server listening on %s:%s", IPC_LISTEN_HOST, IPC_LISTEN_PORT)
-#     return server
-
     # Local Unix socket client
     os.makedirs(os.path.dirname(SOCKET_PATH), exist_ok=True)
     
@@ -105,37 +94,34 @@ def start_ipc_server():
     return server
 
 def send_signal_to_ipc(message: str):
-    # SERVER_IP = "172.27.42.157"  # replace with server's LAN IP
-    # PORT = 7000
+    for _ in range(50):  # retry for ~5 seconds
+        try:
+            client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            client.connect(SOCKET_PATH2)
+            client.sendall(message.encode())
+            client.close()
+            print("IPC_RESULTsent")
+            return
+        except ConnectionRefusedError:
+            time.sleep(0.1)
 
-    # client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # client.connect((SERVER_IP, PORT))
-    # client.sendall(message.encode())
-    # client.close()
-    # logging.info("IPC message sent: %s", message)
-
-    # Local Unix socket client
-    try:
-        client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        client.connect(SOCKET_PATH)
-        client.sendall(message.encode())
-        client.close()
-        logging.info("IPC message sent: %s", message)
-    except Exception as e:
-        logger.warning("Failed to send IPC message: %s", e)
+    raise RuntimeError("IPC_RESULT service not available")
 
 # --------------------- OCR Processing ---------------------
 def init_ocr():
     global ocr
 
     try:
-        logging.info("Initializing PaddleOCR (GPU)...")
+        logging.info("Initializing PaddleOCR...")
         ocr = PaddleOCR(
             use_angle_cls=True,
             lang="en",
             use_static=False,
             #use_gpu=True, 
-        )
+            det_model_dir="/home/zzq/ocr_systemd/paddle_models/det",
+            rec_model_dir="/home/zzq/ocr_systemd/paddle_models/rec",
+            cls_model_dir="/home/zzq/ocr_systemd/paddle_models/cls"
+            )
     except Exception:
         logging.exception("Failed to initialize PaddleOCR")
         sys.exit(1)
