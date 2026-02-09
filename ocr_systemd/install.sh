@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-REPO_URL="https://github.com/zhaozhiqiang1971/ihawk/tree/main/ocr_systemd"
+REPO_URL="https://github.com/zhaozhiqiang1971/ihawk.git"
 INSTALL_DIR="$HOME/ocr_systemd"
 SERVICE_NAME="ocr"
 
